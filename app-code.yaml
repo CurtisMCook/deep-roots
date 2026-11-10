@@ -1,0 +1,106 @@
+apiVersion: v1
+data:
+  server.js: "const http = require('node:http');\n\nconst port = process.env.PORT
+    || 8080;\nconst team = process.env.TEAM_NAME || 'deep-roots';\n\nconst submissions
+    = [];\n\nconst podName =\n  process.env.HOSTNAME || 'unknown';\n\nfunction recommendation(interest,
+    contribution) {\n  if (interest === 'Kubernetes' && contribution === 'Code') {\n
+    \   return 'Argo CD';\n  }\n\n  if (interest === 'Observability') {\n    return
+    'OpenTelemetry';\n  }\n\n  if (interest === 'GitOps') {\n    return 'Flux CD';\n
+    \ }\n\n  if (interest === 'AI') {\n    return 'Kubeflow';\n  }\n\n  return 'Backstage';\n}\n\nfunction
+    nextStep(goal) {\n  if (goal === 'A Mentor') {\n    return 'Introduce yourself
+    to an experienced contributor during the Deep Roots gathering.';\n  }\n\n  if
+    (goal === 'My First Contribution') {\n    return 'Look for a project labeled \"good
+    first issue\".';\n  }\n\n  if (goal === 'A Community') {\n    return 'Join the
+    project Slack or Discord and attend a community meeting.';\n  }\n\n  return 'Connect
+    with project maintainers and learn where help is needed.';\n}\n\nfunction whyThisFits(interest)
+    {\n  if (interest === 'Kubernetes') {\n    return 'Kubernetes has one of the largest
+    and most active open source communities.';\n  }\n\n  if (interest === 'AI') {\n
+    \   return 'AI-related cloud native projects are rapidly growing and welcome contributors.';\n
+    \ }\n\n  if (interest === 'Observability') {\n    return 'Observability projects
+    such as OpenTelemetry welcome contributors across code, docs, and community participation.';\n
+    \ }\n\n  if (interest === 'GitOps') {\n    return 'GitOps projects help organizations
+    automate deployments and have active contributor communities.';\n  }\n\n  if (interest
+    === 'Security') {\n    return 'Security remains a critical cloud native challenge
+    and many CNCF projects are actively seeking contributors.';\n  }\n\n  return 'Your
+    selected interest aligns well with active CNCF communities.';\n}\n\nconst server
+    = http.createServer((req, res) => {\n  const url = new URL(req.url, 'http://localhost');\n\n
+    \ if (url.pathname === '/healthz' || url.pathname === '/readyz') {\n    res.writeHead(200);\n
+    \   return res.end('ok');\n  }\n\n  if (url.pathname === '/live') {\n    const
+    regionCounts = {};\n    const goalCounts = {};\n    const interestCounts = {};\n\n
+    \   submissions.forEach((s) => {\n      regionCounts[s.region] =\n        (regionCounts[s.region]
+    || 0) + 1;\n\n      goalCounts[s.goal] =\n        (goalCounts[s.goal] || 0) +
+    1;\n\n      interestCounts[s.interest] =\n        (interestCounts[s.interest]
+    || 0) + 1;\n    });\n\n    const regionRows = Object.entries(regionCounts)\n      .map(([k,
+    v]) => `<li>${k}: ${v}</li>`)\n      .join('');\n\n    const goalRows = Object.entries(goalCounts)\n
+    \     .map(([k, v]) => `<li>${k}: ${v}</li>`)\n      .join('');\n\n    const interestRows
+    = Object.entries(interestCounts)\n      .map(([k, v]) => `<li>${k}: ${v}</li>`)\n
+    \     .join('');\n\n    res.writeHead(200, {\n      'content-type': 'text/html;
+    charset=utf-8'\n    });\n\n    return res.end(`\n      <!doctype html>\n\n      <h1>\U0001F30D
+    Deep Roots Community Pulse</h1>\n\n      <h2>Regions</h2>\n      <ul>\n      ${regionRows
+    || '<li>No responses yet</li>'}\n      </ul>\n\n      <h2>Goals</h2>\n      <ul>\n
+    \     ${goalRows || '<li>No responses yet</li>'}\n      </ul>\n\n      <h2>Popular
+    Interests</h2>\n      <ul>\n      ${interestRows || '<li>No responses yet</li>'}\n
+    \     </ul>\n\n      <p>\n      <strong>Total Participants:</strong>\n      ${submissions.length}\n
+    \     </p>\n\n      <p>\n      <a href=\"/\">Return Home</a>\n      </p>\n\n      <p>\n
+    \     <strong>Served By:</strong> ${podName}\n      </p>\n    `);\n  }\n\n  if
+    (url.pathname === '/submit' && req.method === 'POST') {\n    let body = '';\n\n
+    \   req.on('data', chunk => {\n      body += chunk;\n    });\n\n    req.on('end',
+    () => {\n      const params = new URLSearchParams(body);\n\n      const name =
+    params.get('name');\n      const region = params.get('region');\n      const experience
+    = params.get('experience');\n      const interest = params.get('interest');\n
+    \     const goal = params.get('goal');\n      const contribution = params.get('contribution');\n\n
+    \     submissions.push({\n        name,\n        region,\n        experience,\n
+    \       interest,\n        goal,\n        contribution\n      });\n\n      console.log('New
+    submission:', {\n        name,\n        region,\n        experience,\n        interest,\n
+    \       goal,\n        contribution\n      });\n\n      const project = recommendation(interest,
+    contribution);\n      const step = nextStep(goal);\n      const explanation =
+    whyThisFits(interest);\n\n      res.writeHead(200, {\n        'content-type':
+    'text/html; charset=utf-8'\n      });\n\n      res.end(`\n        <!doctype html>\n\n
+    \       <h1>\U0001F331 Your Deep Roots Path</h1>\n\n        <p>\n        Welcome,
+    ${name}!\n        </p>\n\n        <h2>Recommended Project</h2>\n\n        <p>\n
+    \       ${project}\n        </p>\n\n        <h2>Your Profile</h2>\n\n        <ul>\n
+    \       <li><strong>Region:</strong> ${region}</li>\n        <li><strong>Experience:</strong>
+    ${experience}</li>\n        <li><strong>Interest:</strong> ${interest}</li>\n
+    \       <li><strong>Goal:</strong> ${goal}</li>\n        <li><strong>Contribution
+    Style:</strong> ${contribution}</li>\n        </ul>\n\n        <h2>Why This Recommendation
+    Fits</h2>\n\n        <p>\n        ${explanation}\n        </p>\n\n        <h2>Suggested
+    First Step</h2>\n\n        <p>\n        ${step}\n        </p>\n\n        <h2>KubeCon
+    Action Item</h2>\n\n        <p>\n        Since you're looking for <strong>${goal}</strong>,
+    use the Deep Roots\n        Community Gathering to connect with people who share
+    similar interests\n        and learn how they got started in open source.\n        </p>\n\n
+    \       <p>\n        <a href=\"/live\">View Community Pulse</a>\n        </p>\n\n
+    \       <p>\n        <a href=\"/\">Start Over</a>\n        </p>\n\n        <p>\n
+    \       <strong>Served By:</strong> ${podName}\n        </p>\n      `);      \n
+    \   });\n\n    return;\n  }\n\n  res.writeHead(200, {\n    'content-type': 'text/html;
+    charset=utf-8'\n  });\n\n  res.end(`\n    <!doctype html>\n    <title>Deep Roots
+    Community Gathering | KubeCon</title>\n\n    <h1>Deep Roots Community Gathering</h1>\n\n
+    \   <h2>Find Your Open Source Path at KubeCon</h2>\n\n    <p>\n      Hosted by
+    Curtis Cook and Ashwin Sarimin at KubeCon North America.\n    </p>\n\n<p>\nAnswer
+    a few questions and discover CNCF projects,\nopen source communities, mentors,
+    and contribution\nopportunities tailored to your interests.\n</p>\n\n    <form
+    method=\"POST\" action=\"/submit\">\n      <p>\n        <label>Name</label><br>\n
+    \       <input name=\"name\" required>\n      </p>\n\n      <p>\n        <label>Region</label><br>\n
+    \       <select name=\"region\">\n          <option>Africa</option>\n          <option>Europe</option>\n
+    \         <option>North America</option>\n          <option>South America</option>\n
+    \         <option>Asia</option>\n          <option>Other</option>\n        </select>\n
+    \     </p>\n\n      <p>\n        <label>Experience</label><br>\n        <select
+    name=\"experience\">\n          <option>Student</option>\n          <option>New
+    Contributor</option>\n          <option>Engineer</option>\n          <option>Platform
+    Engineer</option>\n        </select>\n      </p>\n\n      <p>\n        <label>Interest</label><br>\n
+    \       <select name=\"interest\">\n          <option>Kubernetes</option>\n          <option>AI</option>\n
+    \         <option>Observability</option>\n          <option>GitOps</option>\n
+    \         <option>Security</option>\n        </select>\n      </p>\n\n      <p>\n
+    \       <label>What are you looking for?</label><br>\n        <select name=\"goal\">\n
+    \         <option>My First Contribution</option>\n          <option>A Mentor</option>\n
+    \         <option>A Community</option>\n          <option>Speaking Opportunities</option>\n
+    \         <option>Career Advice</option>\n          <option>Open Source Projects</option>\n
+    \       </select>\n      </p>\n\n      <p>\n        <label>Contribution Type</label><br>\n
+    \       <select name=\"contribution\">\n          <option>Code</option>\n          <option>Documentation</option>\n
+    \         <option>Community</option>\n          <option>Speaking</option>\n        </select>\n
+    \     </p>\n\n      <button type=\"submit\">\n        Find My Open Source Path\n
+    \     </button>\n    </form>\n\n    <p>\n      <a href=\"/live\">Live Community
+    Interest Map</a>\n    </p>\n  `);\n});\n\nserver.listen(port, () => {\n  console.log(`listening
+    on ${port}`);\n});\n"
+kind: ConfigMap
+metadata:
+  name: app-code
